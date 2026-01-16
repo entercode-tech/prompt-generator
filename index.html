@@ -17,7 +17,7 @@
         .app-header {
             background: linear-gradient(135deg, #10b981 0%, #059669 100%);
             color: white;
-            padding: 20px 0;
+            padding: 10px 0;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             position: sticky;
             top: 0;
@@ -184,7 +184,7 @@
 
     <div class="app-header">
         <div class="app-container">
-            <h4 class="mb-0"><i class="fas fa-magic"></i> Prompt Generator</h4>
+            <h4 class="mb-0">Ayang Sriii <3</h4>
         </div>
     </div>
 
@@ -280,6 +280,15 @@
                             <label class="form-label">Template Prompt</label>
                             <textarea class="form-control" id="editTemplatePrompt" rows="6" placeholder="Template prompt"></textarea>
                             <small class="text-muted">Gunakan {NAMA_VARIABEL} untuk menandai variabel</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Visibilitas Template</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="editIsPublic">
+                                <label class="form-check-label" for="editIsPublic">
+                                    <i class="fas fa-globe"></i> Publik (dapat diakses semua pengguna)
+                                </label>
+                            </div>
                         </div>
                         <div id="editDetectedVars" class="mb-3"></div>
                     </div>
@@ -550,9 +559,9 @@
                     .eq('id', id)
                     .eq('user_id', currentUserId)
                     .single();
- 
+
                 if (error) throw error;
- 
+
                 if (!data) {
                     alertify.error('Anda tidak memiliki akses untuk mengedit template ini');
                     return;
@@ -561,6 +570,7 @@
                 $('#editTemplateId').val(data.id);
                 $('#editTemplateName').val(data.name);
                 $('#editTemplatePrompt').val(data.prompt);
+                $('#editIsPublic').prop('checked', data.is_public);
                 
                 const vars = Array.isArray(data.variables) ? data.variables : [];
                 if (vars.length > 0) {
@@ -573,7 +583,7 @@
                 } else {
                     $('#editDetectedVars').html('');
                 }
- 
+
                 const modal = new bootstrap.Modal(document.getElementById('editTemplateModal'));
                 modal.show();
             } catch (error) {
@@ -605,6 +615,7 @@
             const id = parseInt($('#editTemplateId').val());
             const name = $('#editTemplateName').val().trim();
             const prompt = $('#editTemplatePrompt').val().trim();
+            const isPublic = $('#editIsPublic').is(':checked');
             
             if (!name || !prompt) {
                 alertify.error('Nama template dan prompt harus diisi!');
@@ -625,12 +636,13 @@
                     .update({
                         name: name,
                         prompt: prompt,
-                        variables: variables
+                        variables: variables,
+                        is_public: isPublic
                     })
                     .eq('id', id)
                     .eq('user_id', currentUserId)
                     .select();
- 
+
                 if (error) throw error;
 
                 const modal = bootstrap.Modal.getInstance(document.getElementById('editTemplateModal'));
