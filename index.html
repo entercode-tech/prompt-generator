@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prompt Generator</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/AlertifyJS/1.13.1/css/alertify.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/AlertifyJS/1.13.1/css/themes/default.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: #f5f5f5;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding-bottom: 70px;
+        }
+        .app-header {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 20px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        .app-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px 15px;
+        }
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+        }
+        .card-header {
+            background: white;
+            border-bottom: 2px solid #f0f0f0;
+            border-radius: 15px 15px 0 0 !important;
+            font-weight: 600;
+            color: #333;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 12px 20px;
+            font-weight: 500;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(16, 185, 129, 0.4);
+        }
+        .btn-secondary {
+            border-radius: 10px;
+            padding: 10px 15px;
+        }
+        .form-control, .form-select {
+            border-radius: 10px;
+            border: 1px solid #e0e0e0;
+            padding: 12px 15px;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #10b981;
+            box-shadow: 0 0 0 0.2rem rgba(16, 185, 129, 0.25);
+        }
+        .template-item {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .template-item:hover {
+            border-color: #10b981;
+            box-shadow: 0 2px 10px rgba(16, 185, 129, 0.1);
+        }
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            z-index: 1000;
+        }
+        .bottom-nav-item {
+            flex: 1;
+            text-align: center;
+            color: #999;
+            text-decoration: none;
+            padding: 5px;
+            transition: all 0.3s;
+        }
+        .bottom-nav-item.active {
+            color: #10b981;
+        }
+        .bottom-nav-item i {
+            font-size: 24px;
+            display: block;
+            margin-bottom: 3px;
+        }
+        .bottom-nav-item span {
+            font-size: 12px;
+        }
+        .page {
+            display: none;
+        }
+        .page.active {
+            display: block;
+        }
+        .variable-badge {
+            display: inline-block;
+            background: #10b981;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 5px;
+            font-size: 12px;
+            margin: 2px;
+        }
+        .result-box {
+            background: #f8f9fa;
+            border: 2px dashed #10b981;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+            min-height: 100px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+        .empty-state i {
+            font-size: 64px;
+            margin-bottom: 15px;
+        }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        .loading-overlay.show {
+            display: flex;
+        }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #10b981;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="app-header">
+        <div class="app-container">
+            <h4 class="mb-0"><i class="fas fa-magic"></i> Prompt Generator</h4>
+        </div>
+    </div>
+
+    <div class="app-container">
+        <!-- Page: Create Template -->
+        <div id="createPage" class="page">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-plus-circle"></i> Buat Template Baru
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Nama Template</label>
+                        <input type="text" class="form-control" id="templateName" placeholder="Misal: Blog Post Generator">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Template Prompt</label>
+                        <textarea class="form-control" id="templatePrompt" rows="6" placeholder="Tulis artikel tentang {TOPIK} dengan gaya {GAYA_PENULISAN} untuk audience {TARGET_AUDIENCE}"></textarea>
+                        <small class="text-muted">Gunakan {NAMA_VARIABEL} untuk menandai variabel</small>
+                    </div>
+                    <div id="detectedVars" class="mb-3"></div>
+                    <button class="btn btn-primary w-100" id="saveTemplateBtn">
+                        <i class="fas fa-save"></i> Buat Template
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Page: Generate -->
+        <div id="generatePage" class="page active">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-wand-magic-sparkles"></i> Generate Prompt
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Pilih Template</label>
+                        <select class="form-select" id="templateSelect">
+                            <option value="">-- Pilih Template --</option>
+                        </select>
+                    </div>
+                    <div id="inputFields"></div>
+                    <button class="btn btn-primary w-100 mb-3" id="generateBtn" style="display:none;">
+                        <i class="fas fa-bolt"></i> Generate Prompt
+                    </button>
+                    <div id="resultBox" style="display:none;">
+                        <h6>Hasil Prompt:</h6>
+                        <div class="result-box" id="resultText"></div>
+                        <button class="btn btn-primary w-100 mt-2" id="copyBtn">
+                            <i class="fas fa-copy"></i> Copy ke Clipboard
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Page: Templates -->
+        <div id="templatesPage" class="page">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-list"></i> Template Tersimpan
+                </div>
+                <div class="card-body">
+                    <div id="templatesList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav">
+        <a href="#" class="bottom-nav-item" data-page="createPage">
+            <i class="fas fa-plus-circle"></i>
+            <span>Buat</span>
+        </a>
+        <a href="#" class="bottom-nav-item active" data-page="generatePage">
+            <i class="fas fa-wand-magic-sparkles"></i>
+            <span>Generate</span>
+        </a>
+        <a href="#" class="bottom-nav-item" data-page="templatesPage">
+            <i class="fas fa-list"></i>
+            <span>Templates</span>
+        </a>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/AlertifyJS/1.13.1/alertify.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // Supabase Configuration
+        const SUPABASE_URL = 'https://pjlwappjshoewkoteapq.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBqbHdhcHBqc2hvZXdrb3RlYXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg1Njk4MTUsImV4cCI6MjA4NDE0NTgxNX0.Gor3bIRysZY3wk-qq-E0s1xUexn8HCuv2b__Hq2bO6c';
+        
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Show/Hide Loading
+        function showLoading() {
+            $('#loadingOverlay').addClass('show');
+        }
+
+        function hideLoading() {
+            $('#loadingOverlay').removeClass('show');
+        }
+
+        // Detect variables from template text
+        function detectVariables(text) {
+            const regex = /\{([^}]+)\}/g;
+            const variables = [];
+            let match;
+            while ((match = regex.exec(text)) !== null) {
+                if (!variables.includes(match[1])) {
+                    variables.push(match[1]);
+                }
+            }
+            return variables;
+        }
+
+        // Display detected variables
+        $('#templatePrompt').on('input', function() {
+            const text = $(this).val();
+            const vars = detectVariables(text);
+            if (vars.length > 0) {
+                let html = '<div><strong>Variabel terdeteksi:</strong><br>';
+                vars.forEach(v => {
+                    html += `<span class="variable-badge">{${v}}</span>`;
+                });
+                html += '</div>';
+                $('#detectedVars').html(html);
+            } else {
+                $('#detectedVars').html('');
+            }
+        });
+
+        // Save template to Supabase
+        $('#saveTemplateBtn').click(async function() {
+            const name = $('#templateName').val().trim();
+            const prompt = $('#templatePrompt').val().trim();
+            
+            if (!name || !prompt) {
+                alertify.error('Nama template dan prompt harus diisi!');
+                return;
+            }
+
+            const variables = detectVariables(prompt);
+            if (variables.length === 0) {
+                alertify.warning('Template harus memiliki minimal satu variabel. Gunakan format {NAMA_VARIABEL}');
+                return;
+            }
+
+            showLoading();
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('templates')
+                    .insert([
+                        {
+                            name: name,
+                            prompt: prompt,
+                            variables: variables
+                        }
+                    ])
+                    .select();
+
+                if (error) throw error;
+
+                // Clear form
+                $('#templateName').val('');
+                $('#templatePrompt').val('');
+                $('#detectedVars').html('');
+                
+                alertify.success('Template berhasil disimpan!');
+                await loadTemplateSelect();
+                await loadTemplatesList();
+            } catch (error) {
+                console.error('Error saving template:', error);
+                alertify.error('Gagal menyimpan template: ' + error.message);
+            } finally {
+                hideLoading();
+            }
+        });
+
+        // Load templates from Supabase to select dropdown
+        async function loadTemplateSelect() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('templates')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                const select = $('#templateSelect');
+                select.html('<option value="">-- Pilih Template --</option>');
+                
+                if (data && data.length > 0) {
+                    data.forEach(t => {
+                        select.append(`<option value="${t.id}">${t.name}</option>`);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading templates:', error);
+                alertify.error('Gagal memuat template');
+            }
+        }
+
+        // Load templates list
+        async function loadTemplatesList() {
+            const list = $('#templatesList');
+            
+            try {
+                showLoading();
+                
+                const { data, error } = await supabaseClient
+                    .from('templates')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                if (!data || data.length === 0) {
+                    list.html('<div class="empty-state"><i class="fas fa-inbox"></i><p>Belum ada template tersimpan</p></div>');
+                    return;
+                }
+
+                let html = '';
+                data.forEach(t => {
+                    const varCount = Array.isArray(t.variables) ? t.variables.length : 0;
+                    html += `
+                        <div class="template-item">
+                            <div>
+                                <strong>${t.name}</strong><br>
+                                <small class="text-muted">${varCount} variabel</small>
+                            </div>
+                            <button class="btn btn-sm btn-danger" onclick="deleteTemplate(${t.id})">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    `;
+                });
+                list.html(html);
+            } catch (error) {
+                console.error('Error loading templates list:', error);
+                list.html('<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Gagal memuat template</p></div>');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Delete template from Supabase
+        window.deleteTemplate = function(id) {
+            alertify.confirm('Hapus Template', 'Apakah Anda yakin ingin menghapus template ini?',
+                async function() {
+                    showLoading();
+                    try {
+                        const { error } = await supabaseClient
+                            .from('templates')
+                            .delete()
+                            .eq('id', id);
+
+                        if (error) throw error;
+
+                        alertify.success('Template berhasil dihapus');
+                        await loadTemplateSelect();
+                        await loadTemplatesList();
+                    } catch (error) {
+                        console.error('Error deleting template:', error);
+                        alertify.error('Gagal menghapus template');
+                    } finally {
+                        hideLoading();
+                    }
+                },
+                function() {
+                    // Cancel - do nothing
+                }
+            );
+        };
+
+        // Template selection change
+        $('#templateSelect').change(async function() {
+            const id = parseInt($(this).val());
+            if (!id) {
+                $('#inputFields').html('');
+                $('#generateBtn').hide();
+                $('#resultBox').hide();
+                return;
+            }
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('templates')
+                    .select('*')
+                    .eq('id', id)
+                    .single();
+
+                if (error) throw error;
+
+                // Generate input fields
+                let html = '';
+                if (data.variables && Array.isArray(data.variables)) {
+                    data.variables.forEach(v => {
+                        html += `
+                            <div class="mb-3">
+                                <label class="form-label">${v}</label>
+                                <input type="text" class="form-control variable-input" data-var="${v}" placeholder="Isi ${v}">
+                            </div>
+                        `;
+                    });
+                }
+                $('#inputFields').html(html);
+                $('#generateBtn').show();
+                $('#resultBox').hide();
+            } catch (error) {
+                console.error('Error loading template details:', error);
+                alertify.error('Gagal memuat detail template');
+            }
+        });
+
+        // Generate prompt
+        $('#generateBtn').click(async function() {
+            const id = parseInt($('#templateSelect').val());
+            
+            try {
+                const { data, error } = await supabaseClient
+                    .from('templates')
+                    .select('*')
+                    .eq('id', id)
+                    .single();
+
+                if (error) throw error;
+
+                let result = data.prompt;
+                let allFilled = true;
+
+                $('.variable-input').each(function() {
+                    const varName = $(this).data('var');
+                    const value = $(this).val().trim();
+                    if (!value) {
+                        allFilled = false;
+                        return false;
+                    }
+                    result = result.replace(new RegExp(`\\{${varName}\\}`, 'g'), value);
+                });
+
+                if (!allFilled) {
+                    alertify.error('Semua variabel harus diisi!');
+                    return;
+                }
+
+                $('#resultText').text(result);
+                $('#resultBox').show();
+                alertify.success('Prompt berhasil di-generate!');
+            } catch (error) {
+                console.error('Error generating prompt:', error);
+                alertify.error('Gagal generate prompt');
+            }
+        });
+
+        // Copy to clipboard
+        $('#copyBtn').click(function() {
+            const text = $('#resultText').text();
+            navigator.clipboard.writeText(text).then(() => {
+                alertify.success('Teks berhasil disalin ke clipboard!');
+            }).catch(() => {
+                alertify.error('Gagal menyalin teks');
+            });
+        });
+
+        // Bottom navigation
+        $('.bottom-nav-item').click(function(e) {
+            e.preventDefault();
+            $('.bottom-nav-item').removeClass('active');
+            $(this).addClass('active');
+            
+            const page = $(this).data('page');
+            $('.page').removeClass('active');
+            $('#' + page).addClass('active');
+
+            if (page === 'templatesPage') {
+                loadTemplatesList();
+            }
+        });
+
+        // Initialize - Load templates on page load
+        $(document).ready(async function() {
+            showLoading();
+            await loadTemplateSelect();
+            hideLoading();
+        });
+    </script>
+</body>
+</html>

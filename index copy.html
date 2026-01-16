@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prompt Generator</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: #f5f5f5;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding-bottom: 70px;
+        }
+        .app-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        .app-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px 15px;
+        }
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+        }
+        .card-header {
+            background: white;
+            border-bottom: 2px solid #f0f0f0;
+            border-radius: 15px 15px 0 0 !important;
+            font-weight: 600;
+            color: #333;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 12px 20px;
+            font-weight: 500;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .btn-secondary {
+            border-radius: 10px;
+            padding: 10px 15px;
+        }
+        .form-control, .form-select {
+            border-radius: 10px;
+            border: 1px solid #e0e0e0;
+            padding: 12px 15px;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        .template-item {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .template-item:hover {
+            border-color: #667eea;
+            box-shadow: 0 2px 10px rgba(102, 126, 234, 0.1);
+        }
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            z-index: 1000;
+        }
+        .bottom-nav-item {
+            flex: 1;
+            text-align: center;
+            color: #999;
+            text-decoration: none;
+            padding: 5px;
+            transition: all 0.3s;
+        }
+        .bottom-nav-item.active {
+            color: #667eea;
+        }
+        .bottom-nav-item i {
+            font-size: 24px;
+            display: block;
+            margin-bottom: 3px;
+        }
+        .bottom-nav-item span {
+            font-size: 12px;
+        }
+        .page {
+            display: none;
+        }
+        .page.active {
+            display: block;
+        }
+        .variable-badge {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 5px;
+            font-size: 12px;
+            margin: 2px;
+        }
+        .result-box {
+            background: #f8f9fa;
+            border: 2px dashed #667eea;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+            min-height: 100px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+        .empty-state i {
+            font-size: 64px;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-header">
+        <div class="app-container">
+            <h4 class="mb-0"><i class="fas fa-magic"></i> Prompt Generator</h4>
+        </div>
+    </div>
+
+    <div class="app-container">
+        <!-- Page: Create Template -->
+        <div id="createPage" class="page active">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-plus-circle"></i> Buat Template Baru
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Nama Template</label>
+                        <input type="text" class="form-control" id="templateName" placeholder="Misal: Blog Post Generator">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Template Prompt</label>
+                        <textarea class="form-control" id="templatePrompt" rows="6" placeholder="Tulis artikel tentang {TOPIK} dengan gaya {GAYA_PENULISAN} untuk audience {TARGET_AUDIENCE}"></textarea>
+                        <small class="text-muted">Gunakan {NAMA_VARIABEL} untuk menandai variabel</small>
+                    </div>
+                    <div id="detectedVars" class="mb-3"></div>
+                    <button class="btn btn-primary w-100" id="saveTemplateBtn">
+                        <i class="fas fa-save"></i> Simpan Template
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Page: Generate -->
+        <div id="generatePage" class="page">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-wand-magic-sparkles"></i> Generate Prompt
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Pilih Template</label>
+                        <select class="form-select" id="templateSelect">
+                            <option value="">-- Pilih Template --</option>
+                        </select>
+                    </div>
+                    <div id="inputFields"></div>
+                    <button class="btn btn-primary w-100 mb-3" id="generateBtn" style="display:none;">
+                        <i class="fas fa-bolt"></i> Generate Prompt
+                    </button>
+                    <div id="resultBox" style="display:none;">
+                        <h6>Hasil Prompt:</h6>
+                        <div class="result-box" id="resultText"></div>
+                        <button class="btn btn-secondary w-100 mt-2" id="copyBtn">
+                            <i class="fas fa-copy"></i> Copy ke Clipboard
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Page: Templates -->
+        <div id="templatesPage" class="page">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-list"></i> Template Tersimpan
+                </div>
+                <div class="card-body">
+                    <div id="templatesList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav">
+        <a href="#" class="bottom-nav-item active" data-page="createPage">
+            <i class="fas fa-plus-circle"></i>
+            <span>Buat</span>
+        </a>
+        <a href="#" class="bottom-nav-item" data-page="generatePage">
+            <i class="fas fa-wand-magic-sparkles"></i>
+            <span>Generate</span>
+        </a>
+        <a href="#" class="bottom-nav-item" data-page="templatesPage">
+            <i class="fas fa-list"></i>
+            <span>Templates</span>
+        </a>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Template storage in memory (since localStorage is not supported)
+        let templates = [];
+
+        // Detect variables from template text
+        function detectVariables(text) {
+            const regex = /\{([^}]+)\}/g;
+            const variables = [];
+            let match;
+            while ((match = regex.exec(text)) !== null) {
+                if (!variables.includes(match[1])) {
+                    variables.push(match[1]);
+                }
+            }
+            return variables;
+        }
+
+        // Display detected variables
+        $('#templatePrompt').on('input', function() {
+            const text = $(this).val();
+            const vars = detectVariables(text);
+            if (vars.length > 0) {
+                let html = '<div><strong>Variabel terdeteksi:</strong><br>';
+                vars.forEach(v => {
+                    html += `<span class="variable-badge">{${v}}</span>`;
+                });
+                html += '</div>';
+                $('#detectedVars').html(html);
+            } else {
+                $('#detectedVars').html('');
+            }
+        });
+
+        // Save template
+        $('#saveTemplateBtn').click(function() {
+            const name = $('#templateName').val().trim();
+            const prompt = $('#templatePrompt').val().trim();
+            
+            if (!name || !prompt) {
+                alert('Nama template dan prompt harus diisi!');
+                return;
+            }
+
+            const variables = detectVariables(prompt);
+            if (variables.length === 0) {
+                alert('Template harus memiliki minimal satu variabel. Gunakan format {NAMA_VARIABEL}');
+                return;
+            }
+
+            const template = {
+                id: Date.now(),
+                name: name,
+                prompt: prompt,
+                variables: variables
+            };
+
+            templates.push(template);
+            
+            // Clear form
+            $('#templateName').val('');
+            $('#templatePrompt').val('');
+            $('#detectedVars').html('');
+            
+            alert('Template berhasil disimpan!');
+            loadTemplateSelect();
+            loadTemplatesList();
+        });
+
+        // Load templates to select dropdown
+        function loadTemplateSelect() {
+            const select = $('#templateSelect');
+            select.html('<option value="">-- Pilih Template --</option>');
+            templates.forEach(t => {
+                select.append(`<option value="${t.id}">${t.name}</option>`);
+            });
+        }
+
+        // Load templates list
+        function loadTemplatesList() {
+            const list = $('#templatesList');
+            if (templates.length === 0) {
+                list.html('<div class="empty-state"><i class="fas fa-inbox"></i><p>Belum ada template tersimpan</p></div>');
+                return;
+            }
+
+            let html = '';
+            templates.forEach(t => {
+                html += `
+                    <div class="template-item">
+                        <div>
+                            <strong>${t.name}</strong><br>
+                            <small class="text-muted">${t.variables.length} variabel</small>
+                        </div>
+                        <button class="btn btn-sm btn-danger" onclick="deleteTemplate(${t.id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+            });
+            list.html(html);
+        }
+
+        // Delete template
+        window.deleteTemplate = function(id) {
+            if (confirm('Hapus template ini?')) {
+                templates = templates.filter(t => t.id !== id);
+                loadTemplateSelect();
+                loadTemplatesList();
+            }
+        };
+
+        // Template selection change
+        $('#templateSelect').change(function() {
+            const id = parseInt($(this).val());
+            if (!id) {
+                $('#inputFields').html('');
+                $('#generateBtn').hide();
+                $('#resultBox').hide();
+                return;
+            }
+
+            const template = templates.find(t => t.id === id);
+            if (!template) return;
+
+            // Generate input fields
+            let html = '';
+            template.variables.forEach(v => {
+                html += `
+                    <div class="mb-3">
+                        <label class="form-label">${v}</label>
+                        <input type="text" class="form-control variable-input" data-var="${v}" placeholder="Isi ${v}">
+                    </div>
+                `;
+            });
+            $('#inputFields').html(html);
+            $('#generateBtn').show();
+            $('#resultBox').hide();
+        });
+
+        // Generate prompt
+        $('#generateBtn').click(function() {
+            const id = parseInt($('#templateSelect').val());
+            const template = templates.find(t => t.id === id);
+            if (!template) return;
+
+            let result = template.prompt;
+            let allFilled = true;
+
+            $('.variable-input').each(function() {
+                const varName = $(this).data('var');
+                const value = $(this).val().trim();
+                if (!value) {
+                    allFilled = false;
+                    return false;
+                }
+                result = result.replace(new RegExp(`\\{${varName}\\}`, 'g'), value);
+            });
+
+            if (!allFilled) {
+                alert('Semua variabel harus diisi!');
+                return;
+            }
+
+            $('#resultText').text(result);
+            $('#resultBox').show();
+        });
+
+        // Copy to clipboard
+        $('#copyBtn').click(function() {
+            const text = $('#resultText').text();
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = $(this);
+                const originalText = btn.html();
+                btn.html('<i class="fas fa-check"></i> Tersalin!');
+                setTimeout(() => {
+                    btn.html(originalText);
+                }, 2000);
+            });
+        });
+
+        // Bottom navigation
+        $('.bottom-nav-item').click(function(e) {
+            e.preventDefault();
+            $('.bottom-nav-item').removeClass('active');
+            $(this).addClass('active');
+            
+            const page = $(this).data('page');
+            $('.page').removeClass('active');
+            $('#' + page).addClass('active');
+
+            if (page === 'templatesPage') {
+                loadTemplatesList();
+            }
+        });
+
+        // Initialize
+        $(document).ready(function() {
+            loadTemplateSelect();
+            loadTemplatesList();
+        });
+    </script>
+</body>
+</html>
